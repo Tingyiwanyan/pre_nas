@@ -1,1 +1,1 @@
-pre_nas
+Pruning Initialization on Resnet
