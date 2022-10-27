@@ -29,8 +29,8 @@ def load_data(input_file):
     x = d['data']
     y = d['labels']
 
-    x = np.dstack((x[:, :1024], x[:, 1024:2048], x[:, 2048:]))
-    x = x.reshape((x.shape[0], 32, 32, 3))
+    x = np.dstack((x[:, :4096], x[:, 4096:8192], x[:, 8192:]))
+    x = x.reshape((x.shape[0], 64, 64, 3))
 
     return x, y
 
