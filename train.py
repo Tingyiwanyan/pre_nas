@@ -8,6 +8,7 @@ import tensorflow.keras as K
 from sklearn.preprocessing import LabelBinarizer,LabelEncoder
 from tensorflow.keras.metrics import categorical_accuracy,top_k_categorical_accuracy
 import timeit
+from ntk_cal import ntk_compute
 
 file_path_train_64 = '/home/tingyi/Downloads/img_net_subset/Imagenet64_train/train_data_batch_'
 
@@ -58,9 +59,9 @@ class train_network():
         return top_k_categorical_accuracy(y_true, y_pred, k=5)
 
     def model_resnet50(self):
-        nc_model = nc.network_construction()
+        self.nc_model = nc.network_construction()
 
-        self.model = nc_model.ResNet50(input_shape=(64, 64, 3), classes=1000)
+        self.model = self.nc_model.ResNet50(input_shape=(64, 64, 3), classes=1000)
         #self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['acc', self.top_5_accuracy])
 
         #self.model.compile(loss='categorical_crossentropy',
@@ -163,3 +164,4 @@ if __name__ == '__main__':
 
     train_net = train_network()
     train_net.model_resnet50()
+    k = train_net.nc_model.prune_network_stack(["stage_2","stage_3","stage_4","stage_5"])
