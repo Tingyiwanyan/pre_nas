@@ -1,5 +1,6 @@
 from data_process import data_preprocess as dp
 from lib import network_construct as nc
+from lib import ntk_cal
 from matplotlib import pyplot as plt
 from PIL import Image
 import numpy as np
@@ -8,7 +9,7 @@ import tensorflow.keras as K
 from sklearn.preprocessing import LabelBinarizer,LabelEncoder
 from tensorflow.keras.metrics import categorical_accuracy,top_k_categorical_accuracy
 import timeit
-from ntk_cal import ntk_compute
+#from ntk_cal import ntk_compute
 
 file_path_train_64 = '/home/tingyi/Downloads/img_net_subset/Imagenet64_train/train_data_batch_'
 
@@ -165,3 +166,4 @@ if __name__ == '__main__':
     train_net = train_network()
     train_net.model_resnet50()
     k = train_net.nc_model.prune_network_stack(["stage_2","stage_3","stage_4","stage_5"])
+    ntk_computation = ntk_cal.ntk_compute(train_net)

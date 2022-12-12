@@ -44,6 +44,7 @@ class network_construction():
         self.input_shape = (64, 64, 3)  ##desired shape of the image for resizing purposes
         self.val_sample = 0.1
         self.resnet_arch()
+        #self.strategy = tf.distribute.MirroredStrategy()
 
     def resnet_arch(self):
         """
@@ -211,6 +212,7 @@ class network_construction():
 
 
     def stack_architecture(self, structure_list, input_shape=(64, 64, 3)):
+        #with self.strategy.scope():
         X_input = Input(input_shape)
 
         X = ZeroPadding2D((3, 3))(X_input)
