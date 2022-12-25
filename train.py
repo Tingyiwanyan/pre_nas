@@ -27,11 +27,13 @@ class train_network():
         for i in range(10):
             print(i)
             x_train, y_train = dp.load_data(file_path_train_64+str(i+1))
+            #x_train = x_train / 255
             y_train = list(np.array(y_train) - 1)
             y_train = self.lb.fit_transform(y_train)
             self.x_train.append(x_train)
             self.y_train.append(y_train)
         self.x_val, self.y_val = dp.load_data(file_path_val_64)
+        self.x_val = self.x_val
 
         self.y_val = list(np.array(self.y_val)-1)
         self.y_val = self.lb.fit_transform(self.y_val)
@@ -62,7 +64,8 @@ class train_network():
     def model_resnet50(self):
         self.nc_model = nc.network_construction()
 
-        self.model = self.nc_model.ResNet50(input_shape=(64, 64, 3), classes=1000)
+        #self.model = self.nc_model.ResNet50(input_shape=(64, 64, 3), classes=1000)
+        self.model = self.nc_model.sample_test_net(input_shape=(64, 64, 3), classes=1000)
         #self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['acc', self.top_5_accuracy])
 
         #self.model.compile(loss='categorical_crossentropy',
@@ -109,6 +112,7 @@ class train_network():
                 self.train_data = self.train_data.shuffle(buffer_size=1024, seed=4).batch(256)
 
                 for step, (x_batch_train, y_batch_train) in enumerate(self.train_data):
+                    x_batch_train = x_batch_train / 255
                     step = step+ii*self.step_plus
                     self.check_x_batch = x_batch_train
                     self.check_label = y_batch_train

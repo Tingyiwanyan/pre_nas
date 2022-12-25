@@ -274,9 +274,42 @@ class network_construction():
         return self.stack_architecture(structure_list, input_shape=(64, 64, 3))
 
 
+    def sample_test_net(self, input_shape=(64, 64, 3), classes=1000):
+        X_input = Input(input_shape)
+
+        # Zero-Padding
+        X = ZeroPadding2D((3, 3))(X_input)
+
+        # Stage 1
+        X = Conv2D(64, (7, 7), strides=(2, 2), name='conv1', kernel_regularizer=regularizers.L2(1e-4),
+                   kernel_initializer=glorot_uniform(seed=0))(X)
+        X = BatchNormalization(axis=3, name='bn_conv1')(X)
+        X = Activation('relu')(X)
+
+        X = Conv2D(64, (3, 3), strides=(2, 2), name='conv2', kernel_regularizer=regularizers.L2(1e-4),
+                   kernel_initializer=glorot_uniform(seed=0))(X)
+        X = BatchNormalization(axis=3, name='bn_conv2')(X)
+        X = Activation('relu')(X)
+
+        X = Conv2D(64, (2, 2), strides=(2, 2), name='conv3', kernel_regularizer=regularizers.L2(1e-4),
+                   kernel_initializer=glorot_uniform(seed=0))(X)
+        X = BatchNormalization(axis=3, name='bn_conv3')(X)
+        X = Activation('relu')(X)
+
+        X = AveragePooling2D()(X)
+
+        # output layer
+        X = Flatten()(X)
+        X = Dense(classes, activation='softmax', name='fc', kernel_initializer=glorot_uniform(seed=0))(X)
+        self.check_X = X
+
+        # Create model
+        model = Model(inputs=X_input, outputs=X, name='ResNet50')
+
+        return model
 
 
-    def ResNet50(self, input_shape=(64, 64, 3), classes=6):
+    def ResNet50(self, input_shape=(64, 64, 3), classes=1000):
         """
         Implementation of the popular ResNet50 the following architecture:
         CONV2D -> BATCHNORM -> RELU -> MAXPOOL -> CONVBLOCK -> IDBLOCK*2 -> CONVBLOCK -> IDBLOCK*3
