@@ -64,8 +64,8 @@ class train_network():
     def model_resnet50(self):
         self.nc_model = nc.network_construction()
 
-        #self.model = self.nc_model.ResNet50(input_shape=(64, 64, 3), classes=1000)
-        self.model = self.nc_model.sample_test_net(input_shape=(64, 64, 3), classes=1000)
+        self.model = self.nc_model.ResNet50(input_shape=(64, 64, 3), classes=1000)
+        #self.model = self.nc_model.sample_test_net(input_shape=(64, 64, 3), classes=1000)
         #self.model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['acc', self.top_5_accuracy])
 
         #self.model.compile(loss='categorical_crossentropy',
@@ -160,9 +160,6 @@ class train_network():
 
     def save_exp_data(self,name):
         self.model.save(name)
-
-
-
 
 
 if __name__ == '__main__':

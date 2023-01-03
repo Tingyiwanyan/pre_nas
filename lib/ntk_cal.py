@@ -10,6 +10,7 @@ class ntk_compute():
         self.seed = 42
         self.input_shape = (64, 64, 3)  ##desired shape of the image for resizing purposes
         self.val_sample = 0.1
+        #self.ntk
         #self.strategy = tf.distribute.MirroredStrategy()
 
 
@@ -343,6 +344,8 @@ class ntk_compute():
         else:
             return mask_previous_layer, w
 
+
+    #def recur_build_derivative_model(self):
 
     def recur_layer_derivative(self, input, curr_layer_num, bottom_layer_num, bottem_layer_alpha_filter_index):
         #w_bottom_shape = self.model_init.model.layers[bottom_layer_num].get_weights()[0].shape
