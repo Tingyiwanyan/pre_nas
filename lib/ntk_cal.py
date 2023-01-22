@@ -2,6 +2,11 @@ import numpy as np
 import tensorflow as tf
 from keras import backend as B
 import math
+from tensorflow.keras.layers import Input, Add, Dense, Dropout, \
+    Activation, ZeroPadding2D, BatchNormalization, Flatten, \
+    Conv2D, AveragePooling2D, MaxPooling2D, GlobalMaxPooling2D,GlobalAveragePooling2D,Concatenate, ReLU,\
+    LeakyReLU,Reshape, Lambda
+from tensorflow.keras.models import Sequential, load_model, Model
 
 class ntk_compute():
     def __init__(self, model_init):
@@ -10,6 +15,7 @@ class ntk_compute():
         self.seed = 42
         self.input_shape = (64, 64, 3)  ##desired shape of the image for resizing purposes
         self.val_sample = 0.1
+        self.dummy_input = np.zeros((1,64,64,3))
         #self.ntk
         #self.strategy = tf.distribute.MirroredStrategy()
 
@@ -325,12 +331,12 @@ class ntk_compute():
         return conv_parameters_output
 
 
-    def cnn_layer_derivative(self, input, layer_num, alpha_filter_index, is_bottom=False):
+    def cnn_layer_derivative(self, inputs, layer_num, alpha_filter_index, is_bottom=False):
         """
         return single cnn layer derivative
         """
-        input = input / 255
-        previous_layer_output = self.get_layer_output(input, layer_num - 1)
+        inputs = inputs / 255
+        previous_layer_output = self.get_layer_output(inputs, layer_num - 1)
         strides = self.model_init.model.layers[layer_num].get_config()['strides'][0]
         pad = self.model_init.model.layers[layer_num].get_config()['padding']
         w = self.model_init.model.layers[layer_num].get_weights()[0]
@@ -345,7 +351,91 @@ class ntk_compute():
             return mask_previous_layer, w
 
 
-    #def recur_build_derivative_model(self):
+    def single_recur_ntk_model(self, recur_shape, curr_layer_shape, curr_layer_cnn_num, 
+        bottem_layer_alpha_filter_index):
+
+        recur_result = Input(recur_shape)
+        curr_layer_output = Input(curr_layer_shape)
+        mask_previous_layer, w = self.cnn_layer_derivative(self.dummy_input, curr_layer_cnn_num,
+                                                               bottem_layer_alpha_filter_index)
+        w_shape = w.shape
+        w = tf.reshape(w, [w.shape[0] * w.shape[1] * w.shape[2], w.shape[3]])
+        mask_previous_layer_ = []
+        for i in range(w_shape[-2]):
+            #mask_previous_layer = tf.concat([mask_previous_layer,mask_previous_layer],axis=1)
+            mask_previous_layer_.append(mask_previous_layer)
+        mask_previous_layer = tf.concat(mask_previous_layer_,axis=1)
+        self.check_mask_previous_layer_new = mask_previous_layer
+        recur_result = tf.cast(tf.transpose(recur_result,[0,2,1]),tf.float32)
+        input_shape = tf.shape(recur_result)
+        recur_result = tf.expand_dims(recur_result,axis=1)
+        recur_result = tf.broadcast_to(recur_result,[input_shape[0],mask_previous_layer.shape[0],input_shape[1],input_shape[2]])
+        self.check_recur_result = recur_result
+        #recur_result = tf.cast(tf.transpose(recur_result,[1,0]),tf.float32)
+        #mask_previous_layer = tf.transpose(mask_previous_layer,[0,1,3,2])
+        single_filter_output_derivative_ = []
+        filter_output_derivative = []
+        mask_single = mask_previous_layer
+        mask_single = tf.expand_dims(mask_single,axis=1)
+        mask_single = tf.expand_dims(mask_single,axis=0)
+        mask_single = tf.broadcast_to(mask_single, [tf.shape(recur_result)[0],mask_previous_layer.shape[0],
+            recur_shape[1],mask_single.shape[-1]])
+        self.check_mask_single = mask_single
+
+        single_filter_output_derivative = tf.boolean_mask(recur_result, mask_single)
+        self.check_single_output_derivative_ = single_filter_output_derivative
+        for i in range(w.shape[-1]):
+            print("construct")
+            print(i)
+            #for j in range(mask_previous_layer.shape[0]):
+            w_single = w[:,i]
+            w_single = tf.expand_dims(w_single,axis=0)
+            w_single = tf.expand_dims(w_single,axis=0)
+            w_single = tf.expand_dims(w_single,axis=0)
+            w_single = tf.broadcast_to(w_single,[tf.shape(recur_result)[0],mask_previous_layer.shape[0],
+                recur_shape[1],w_single.shape[-1]])
+            #mask_single = tf.expand_dims(mask_single,axis=0)
+            single_filter_output_derivative = tf.reshape(single_filter_output_derivative,tf.shape(w_single))
+            self.check_w_single = w_single
+            self.check_single_filter_output_derivative = single_filter_output_derivative
+            single_filter_output_derivative = tf.multiply(w_single,single_filter_output_derivative)
+
+            single_filter_output_derivative = tf.reduce_sum(single_filter_output_derivative,axis=-1)
+            #single_filter_output_derivative_.append(single_filter_output_derivative)
+            #self.check_single_filter_output_derivative_ = single_filter_output_derivative_
+            #single_output_derivative = tf.stack(single_filter_output_derivative_,axis=1)
+            #single_filter_output_derivative_ = []
+
+            self.check_single_output_derivative = single_filter_output_derivative
+            filter_output_derivative.append(single_filter_output_derivative)
+
+        output_derivative = tf.concat(filter_output_derivative,axis=1)
+
+        self.check_output_derivative = output_derivative
+
+        curr_layer_output = tf.reshape(curr_layer_output,
+                                       [tf.shape(curr_layer_output)[0], curr_layer_output.shape[1] *
+                                        curr_layer_output.shape[2] *
+                                        curr_layer_output.shape[-1]])
+        self.check_curr_layer_output = curr_layer_output
+        curr_layer_output = tf.expand_dims(curr_layer_output, axis=2)
+        curr_layer_output = tf.broadcast_to(curr_layer_output, [tf.shape(output_derivative)[0],
+            output_derivative.shape[1],output_derivative.shape[2]])
+
+        output_derivative = tf.multiply(output_derivative, curr_layer_output)
+
+        #mask_previous_layer_index = list(tf.where(mask_previous_layer))
+
+        #output_derivative = tf.gather_nd(recur_result,mask_previous_layer_index)
+        #output_derivative = tf.reduce_sum(output_derivative,axis=2)
+
+        
+
+        model = Model(inputs=[recur_result, curr_layer_output], outputs=output_derivative)
+        return model
+
+    #def recur_build_derivative_model(self, top_layer_num, bottom_layer_num):
+
 
     def recur_layer_derivative(self, input, curr_layer_num, bottom_layer_num, bottem_layer_alpha_filter_index):
         #w_bottom_shape = self.model_init.model.layers[bottom_layer_num].get_weights()[0].shape
@@ -358,7 +448,7 @@ class ntk_compute():
             layer_output_type = curr_layer.output.name.split("/")[1].split(":")[0]
 
         curr_layer_output = self.get_layer_output(input, curr_layer_num)
-        # curr_layer_output_shape = self.model_init.model.layers[curr_layer_num].output.shape
+        #curr_layer_output_shape = self.model_init.model.layers[curr_layer_num].output.shape
         curr_layer_output = tf.reshape(curr_layer_output,
                                        [curr_layer_output.shape[0], curr_layer_output.shape[1] *
                                         curr_layer_output.shape[2] *

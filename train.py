@@ -11,9 +11,9 @@ from tensorflow.keras.metrics import categorical_accuracy,top_k_categorical_accu
 import timeit
 #from ntk_cal import ntk_compute
 
-file_path_train_64 = '/home/tingyi/Downloads/img_net_subset/Imagenet64_train/train_data_batch_'
+file_path_train_64 = '/Users/tingyi/Downloads/Imagenet64_train/train_data_batch_'
 
-file_path_val_64 = '/home/tingyi/Downloads/img_net_subset/Imagenet64_val/val_data'
+file_path_val_64 = '/Users/tingyi/Downloads/Imagenet64_val/val_data'
 
 
 class train_network():
@@ -24,7 +24,7 @@ class train_network():
         self.epoch = 100
         self.batch_size = 256
         #self.x_train, self.y_train = dp.load_data(file_path_train_64+str(1))
-        for i in range(10):
+        for i in range(1):
             print(i)
             x_train, y_train = dp.load_data(file_path_train_64+str(i+1))
             #x_train = x_train / 255
