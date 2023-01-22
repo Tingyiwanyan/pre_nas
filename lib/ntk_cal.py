@@ -385,8 +385,8 @@ class ntk_compute():
         single_filter_output_derivative = tf.boolean_mask(recur_result, mask_single)
         self.check_single_output_derivative_ = single_filter_output_derivative
         for i in range(w.shape[-1]):
-            print("construct")
-            print(i)
+            #print("construct")
+            #print(i)
             #for j in range(mask_previous_layer.shape[0]):
             w_single = w[:,i]
             w_single = tf.expand_dims(w_single,axis=0)
@@ -434,7 +434,23 @@ class ntk_compute():
         model = Model(inputs=[recur_result, curr_layer_output], outputs=output_derivative)
         return model
 
-    #def recur_build_derivative_model(self, top_layer_num, bottom_layer_num):
+    def recur_collect_derivative_model(self, architecture_model, top_layer_num, bottom_layer_num):
+        parameter_shape = architecture_model.layers[bottom_layer_num].get_weights()[0].shape
+        parameter_shape_input = architecture_model.layers[bottom_layer_num].input.shape
+        parameter_shape_output = architecture_model.layers[bottom_layer_num].output.shape
+        input_shape = (parameter_shape_output[1]*parameter_shape_output[2]*parameter_shape_output[3], 
+            parameter_shape[0]*parameter_shape[1]+1)
+        parameter_input = Input(input_shape)
+        curr_layer_num = bottom_layer_num
+        
+        curr_layer = architecture_model.layers[curr_layer_num]
+        layer_output_type = curr_layer.output.name.split("/")[1].split(":")[0]
+        while not layer_output_type == "Relu":
+            curr_layer_num = curr_layer_num + 1
+            curr_layer = architecture_model.layers[curr_layer_num]
+            layer_output_type = curr_layer.output.name.split("/")[1].split(":")[0]
+
+
 
 
     def recur_layer_derivative(self, input, curr_layer_num, bottom_layer_num, bottem_layer_alpha_filter_index):
